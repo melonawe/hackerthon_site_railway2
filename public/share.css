@@ -1,0 +1,303 @@
+/* ===============================
+   share.css - 장소 공유 전용 스타일
+   sample.html 의 style.css 와 충돌 방지
+================================ */
+
+/* 인스타 카드 전체 */
+.post-card {
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 6px 16px rgba(11, 22, 40, 0.06);
+  border: 1px solid #dfe3eb;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  width: 100%;
+  max-width: 650px;
+  margin: 0 auto;
+}
+
+/* hover 효과 */
+.post-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(11, 22, 40, 0.12);
+}
+
+/* =================================
+   이미지: 반응형 + 사진 전체 보이도록
+================================= */
+.post-image-wrapper {
+  width: 100%;
+  background: #000;  /* 검정 배경 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.post-image {
+  width: 100%;
+  height: auto;
+  object-fit: contain;   /* 사진 전체 보임 */
+  max-height: 70vh;      /* 너무 세로로 길어지면 제한 */
+  background: #000;
+}
+
+/* =================================
+   본문 전체
+================================= */
+.post-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* =================================
+   헤더 영역 (IP / 번역 버튼 위치 등)
+================================= */
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.post-ip {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+/* 번역 버튼이 pill 형태로 들어갈 경우를 대비한 기본 스타일(버튼 자체는 HTML 쪽에서 class 지정) */
+.card-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.post-translate-btn {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #2d6cdf;
+  background: #f1f5ff;
+  color: #2d6cdf;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s;
+}
+
+.post-translate-btn:hover {
+  background: #3b7fe0;
+  color: #fff;
+}
+
+/* 메뉴(···) 버튼 – 지금은 안 쓰더라도 유지 */
+.post-more-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #555;
+}
+
+/* =================================
+   버튼 줄 (좋아요, 위치)
+================================= */
+.post-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.post-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.post-action-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.35rem;
+  cursor: pointer;
+  color: #333;
+}
+
+.post-action-btn.like {
+  color: #ff4b6a;
+}
+
+/* =================================
+   좋아요 수
+================================= */
+.post-likes {
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* =================================
+   캡션 (본문)
+================================= */
+.post-caption {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #333;
+}
+
+/* =================================
+   태그
+================================= */
+.post-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.post-tag {
+  padding: 3px 10px;
+  background: #eef4ff;
+  color: #2d6cdf;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  border: 1px solid #dae6ff;
+}
+
+/* =================================
+   작성 시간
+================================= */
+.post-time {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+/* =================================
+   장소 공유 전용: feed 스타일 덮어쓰기
+================================= */
+.feed {
+  display: block !important;
+  max-height: unset !important;
+  overflow: visible !important;
+  padding-right: 0 !important;
+}
+
+/* =================================
+   header / 메뉴 디자인 sample.html 과 동일하게
+================================= */
+
+/* 헤더 오른쪽 영역 (정렬) */
+.header-right {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 12px !important;
+  align-items: center !important;
+}
+
+/* 메뉴바 가로 정렬 유지 */
+.menu-bar {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+/* 메뉴 아이템 – sample.html 과 동일 스타일 */
+.menu-item {
+  padding: 6px 14px !important;
+  border-radius: 999px !important;
+  cursor: pointer !important;
+  font-weight: 600 !important;
+  user-select: none !important;
+  background: #f1f5ff !important;
+  color: #2d6cdf !important;
+  border: 1px solid #2d6cdf !important;
+  transition: all 0.2s !important;
+}
+
+/* active 상태 */
+.menu-item.active {
+  background: #2d6cdf !important;
+  color: #ffffff !important;
+}
+
+/* hover 상태 – 다른 페이지와 동일한 느낌 */
+.menu-item:hover {
+  background: #3b7fe0 !important;
+  color: #ffffff !important;
+}
+
+/* 언어 전환 버튼 – sample.html 과 동일 */
+.lang-toggle {
+  padding: 6px 14px !important;
+  border-radius: 999px !important;
+  border: 1px solid #2d6cdf !important;
+  background: #f1f5ff !important;
+  color: #2d6cdf !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.16s !important;
+}
+
+.lang-toggle:hover {
+  background: #3b7fe0 !important;
+  color: #ffffff !important;
+}
+
+/* =================================
+   🔹 sample.html 과 같은 위치/스타일의 필터 태그
+================================= */
+
+/* 검색줄 + 버튼을 한 줄, 그 아래에 활성 태그 줄 */
+.feed-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+/* 검색창/버튼 줄 */
+.feed-header-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 검색란 밑에 나오는 활성 태그 영역 */
+#activeFilter {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* 활성 태그 pill */
+.active-tag-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #2d6cdf;
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.85em;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* X 버튼 */
+.clear-filter-btn {
+  margin-left: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: none;
+  background: #f1f5ff;
+  color: #2d6cdf;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.8em;
+}
+
+.clear-filter-btn:hover {
+  background: #3b7fe0;
+  color: #fff;
+}

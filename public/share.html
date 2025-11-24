@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>장소 공유</title>
+
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="share.css" />
+
+    <style>
+      /* 번역 버튼을 ♡ / 📍 와 같은 줄에 배치 */
+      .post-actions-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .post-actions-right {
+        display: flex;
+        align-items: center;
+      }
+
+      /* sample.html 검색창 스타일 맞추기 */
+      #searchInput {
+        flex: 1;
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 0.95em;
+        margin-right: 8px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- =========================
+         HEADER (sample.html과 동일)
+    ========================== -->
+    <header>
+      <div class="title" id="pageTitle">장소 공유</div>
+
+      <div class="header-right" style="margin-left: auto; display: flex; gap: 12px; align-items: center;">
+        <nav class="menu-bar" id="menuBar">
+          <div class="menu-item" id="menuMain" onclick="location.href='sample.html'">메인</div>
+          <div class="menu-item" id="menuVocab" onclick="location.href='vocab.html'">단어장</div>
+          <div class="menu-item active" id="menuShare" onclick="location.href='share.html'">장소 공유</div>
+        </nav>
+
+        <button class="lang-toggle" id="langToggle">JP</button>
+      </div>
+    </header>
+
+    <!-- =========================
+         BODY LAYOUT
+    ========================== -->
+    <div class="wrap">
+      <main class="main">
+        <div class="feed-header">
+          <div class="feed-header-top">
+            <input id="searchInput" placeholder="장소/게시글 검색" />
+            <button class="add-question-btn" id="createPostBtn">게시글 작성</button>
+          </div>
+          <div id="activeFilter"></div>
+        </div>
+
+        <!-- DB에서 받아온 카드가 들어갈 자리 -->
+        <div class="feed" id="feed"></div>
+      </main>
+
+      <aside class="sidebar">
+        <div class="tag-box">
+          <input
+            type="text"
+            id="tagSearch"
+            class="tag-search"
+            placeholder="태그 검색"
+            oninput="filterTagList()"
+          />
+          <div id="tagList"></div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- ======================================================
+         SCRIPT — DB 연동 + 번역 + 좋아요 + 태그 필터
+    ======================================================= -->
+    <script>
+      const API_BASE = "http://localhost:3000";
+      const SHARE_LANG_KEY = "SHARE_LANG";
+
+      let posts = [];        // { id, likes, tags, element, text }
+      let postStore = {};    // 번역 전/후 저장 { original, translated, isTranslated, element }
+      let activeTags = [];
+      let searchKeyword = "";
+
+      /****************************************************
+       * 유틸
+       ****************************************************/
+      function escapeHtml(s) {
+        return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        }[c]));
+      }
+
+      function formatDate(iso) {
+        if (!iso) return "";
+        const d = new Date(iso);
+        if (Number.isNaN(d.getTime())) return "";
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      }
+
+      function detectLangByText(text) {
+        if (!text) return "KR";
+        const hangul = (text.match(/[\uac00-\ud7af\u1100-\u11ff\u3130-\u318f]/g) || []).length;
+        const kana   = (text.match(/[\u3040-\u30ff]/g) || []).length;
+        const kanji  = (text.match(/[\u4e00-\u9fff]/g) || []).length;
+        const jap = kana + kanji;
+        if (hangul > jap) return "KR";
+        if (jap > hangul) return "JP";
+        return "KR";
+      }
+
+      /****************************************************
+       * DB에서 장소 목록 불러오기
+       ****************************************************/
+      async function loadPlacesFromDB() {
+        try {
+          const res = await fetch(API_BASE + "/api/places");
+          if (!res.ok) {
+            console.error("장소 목록 불러오기 실패:", res.status);
+            return;
+          }
+          const places = await res.json();
+
+          posts = [];
+          postStore = {};
+          const feed = document.getElementById("feed");
+          feed.innerHTML = "";
+
+          places.forEach((p) => {
+            const card = createCardElement(p);
+            feed.appendChild(card);
+
+            const tagsArr = normalizeTags(p.tags);
+
+            posts.push({
+              id: p.id,
+              likes: p.like_count || 0,
+              tags: tagsArr,
+              element: card,
+              text:
+                ((p.title || "") + " " + (p.description || "") + " " + tagsArr.join(" "))
+                  .toLowerCase(),
+            });
+
+            postStore[p.id] = {
+              original: {
+                caption:
+                  (p.title || "") +
+                  " — " +
+                  ((p.description || "").split("\n")[0] || ""),
+                tags: tagsArr,
+              },
+              translated: null,
+              isTranslated: false,
+              element: card,
+            };
+          });
+
+          renderTagList();
+          renderFeed();
+          applyLanguageUI();   // 카드 만들어진 뒤 번역버튼 텍스트 갱신
+        } catch (err) {
+          console.error("장소 목록 로드 오류:", err);
+        }
+      }
+
+      /****************************************************
+       * tags 문자열/배열 정규화
+       ****************************************************/
+      function normalizeTags(tags) {
+        if (Array.isArray(tags)) {
+          return tags.map((t) => String(t).trim()).filter(Boolean);
+        }
+        if (typeof tags === "string") {
+          return tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean);
+        }
+        return [];
+      }
+
+      /****************************************************
+       * 카드 DOM 생성
+       ****************************************************/
+      function createCardElement(p) {
+        const card = document.createElement("article");
+        card.className = "post-card";
+        card.dataset.id = p.id;
+
+        const tagsArr = normalizeTags(p.tags);
+
+        // 이미지 영역
+        const imgHtml = p.image_url
+          ? `
+            <div class="post-image-wrapper">
+              <img class="post-image" src="${API_BASE + p.image_url}" alt="${escapeHtml(
+                p.title
+              )}" />
+            </div>`
+          : "";
+
+        // 설명에서 지도 URL 하나 추출 (있을 경우)
+        let mapUrl = "";
+        const urlMatch = (p.description || "").match(/https?:\/\/[^\s]+/g);
+        if (urlMatch && urlMatch.length > 0) {
+          mapUrl = urlMatch[0];
+        }
+
+        const caption =
+          (p.title || "") +
+          " — " +
+          ((p.description || "").split("\n")[0] || "");
+
+        const tagHtml = tagsArr
+          .map((t) => `<span class="post-tag">#${escapeHtml(t)}</span>`)
+          .join("");
+
+        card.innerHTML = `
+          ${imgHtml}
+          <div class="post-body">
+            <div class="post-actions-row">
+              <div class="post-actions-left">
+                <button class="post-action-btn like-btn">♡</button>
+                ${
+                  mapUrl
+                    ? `<button class="post-action-btn map-btn">📍</button>`
+                    : ""
+                }
+              </div>
+              <div class="post-actions-right">
+                <button class="post-translate-btn">번역</button>
+              </div>
+            </div>
+
+            <div class="post-likes" data-like-count="${p.like_count || 0}">
+              좋아요 ${p.like_count || 0}개
+            </div>
+
+            <div class="post-caption">${escapeHtml(caption)}</div>
+
+            <div class="post-tags">
+              ${tagHtml}
+            </div>
+
+            <div class="post-time">작성일: ${formatDate(p.created_at)}</div>
+          </div>
+        `;
+
+        // 좋아요 버튼
+        const likeBtn = card.querySelector(".like-btn");
+        likeBtn.addEventListener("click", () => handleLikeClick(p.id));
+
+        // 지도 버튼
+        if (mapUrl) {
+          const mapBtn = card.querySelector(".map-btn");
+          mapBtn.addEventListener("click", () => {
+            window.open(mapUrl, "_blank");
+          });
+        }
+
+        // 번역 버튼
+        const translateBtn = card.querySelector(".post-translate-btn");
+        translateBtn.addEventListener("click", () => translateDynamicPost(p.id));
+
+        // 태그 클릭
+        initTagClicks(card);
+
+        return card;
+      }
+
+      /****************************************************
+       * 좋아요 (서버 /api/places/:id/like 사용)
+       ****************************************************/
+      async function handleLikeClick(id) {
+        try {
+          const res = await fetch(`${API_BASE}/api/places/${id}/like`, {
+            method: "POST",
+          });
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            alert(data.error || "좋아요 처리 중 오류가 발생했습니다.");
+            return;
+          }
+
+          const target = posts.find((p) => p.id === id);
+          if (target) target.likes = data.like_count;
+
+          const card = document.querySelector(`.post-card[data-id="${id}"]`);
+          if (card) {
+            const likeEl = card.querySelector(".post-likes");
+            likeEl.dataset.likeCount = data.like_count;
+            likeEl.textContent = `좋아요 ${data.like_count}개`;
+          }
+
+          renderFeed();
+        } catch (err) {
+          console.error("좋아요 요청 오류:", err);
+          alert("서버와 통신 중 오류가 발생했습니다.");
+        }
+      }
+
+      /****************************************************
+       * 번역 (동적 카드)
+       ****************************************************/
+      async function translateDynamicPost(id) {
+        const info = postStore[id];
+        if (!info) return;
+
+        const card = info.element;
+        const captionEl = card.querySelector(".post-caption");
+        const tagsEl = card.querySelector(".post-tags");
+        const btn = card.querySelector(".post-translate-btn");
+
+        if (info.isTranslated) {
+          // 원문 복원
+          captionEl.textContent = info.original.caption;
+          tagsEl.innerHTML = info.original.tags
+            .map((t) => `<span class="post-tag">#${escapeHtml(t)}</span>`)
+            .join("");
+          info.isTranslated = false;
+          initTagClicks(card);
+          applyLanguageUI();  // 버튼 텍스트 언어 맞추기
+          renderFeed();
+          return;
+        }
+
+        const lines = [info.original.caption, ...info.original.tags];
+        const detected = detectLangByText(lines.join("\n"));
+        const targetLang = detected === "KR" ? "JA" : "KO";
+
+        try {
+          const res = await fetch(API_BASE + "/translate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: lines.join("\n"), target_lang: targetLang }),
+          });
+          const data = await res.json();
+
+          if (!data || !data.translations || !data.translations[0]) {
+            throw new Error("번역 응답 오류");
+          }
+
+          const all = data.translations[0].text.split("\n");
+          const newCaption = all[0];
+          const newTags = all.slice(1);
+
+          captionEl.textContent = newCaption;
+          tagsEl.innerHTML = newTags
+            .map((t) => `<span class="post-tag">#${escapeHtml(t)}</span>`)
+            .join("");
+
+          info.translated = { caption: newCaption, tags: newTags };
+          info.isTranslated = true;
+
+          // posts 배열 태그도 업데이트
+          const target = posts.find((p) => p.id === id);
+          if (target) {
+            target.tags = newTags.map((t) => t.trim());
+            target.text =
+              (info.original.caption + " " + target.tags.join(" ")).toLowerCase();
+          }
+
+          initTagClicks(card);
+          applyLanguageUI(); // 버튼 텍스트 "원문 보기" 등
+          renderFeed();
+        } catch (err) {
+          console.error("번역 오류:", err);
+          alert("번역 중 오류가 발생했습니다.");
+        }
+      }
+
+      /****************************************************
+       * 태그 클릭 / 필터 / 검색
+       ****************************************************/
+      function initTagClicks(card) {
+        card.querySelectorAll(".post-tag").forEach((el) => {
+          const tagText = el.textContent.replace("#", "").trim();
+          el.style.cursor = "pointer";
+          el.onclick = () => onTagClicked(tagText);
+        });
+      }
+
+      function onTagClicked(tag) {
+        const idx = activeTags.indexOf(tag);
+        if (idx > -1) activeTags.splice(idx, 1);
+        else activeTags.push(tag);
+        renderFeed();
+      }
+
+      function renderFeed() {
+        const feed = document.getElementById("feed");
+        feed.innerHTML = "";
+
+        let list = posts.slice();
+
+        if (searchKeyword) {
+          list = list.filter((p) => p.text.includes(searchKeyword.toLowerCase()));
+        }
+        if (activeTags.length > 0) {
+          list = list.filter((p) => activeTags.every((t) => p.tags.includes(t)));
+        }
+
+        // 좋아요 많은 순 + id 내림차순
+        list.sort((a, b) => {
+          if (b.likes !== a.likes) return b.likes - a.likes;
+          return b.id - a.id;
+        });
+
+        list.forEach((p) => feed.appendChild(p.element));
+
+        renderActiveFilter();
+        renderTagList();
+      }
+
+      function renderActiveFilter() {
+        const box = document.getElementById("activeFilter");
+        box.innerHTML = activeTags
+          .map((tag) => `<span class="active-tag-pill">#${escapeHtml(tag)}</span>`)
+          .join("");
+      }
+
+      function renderTagList() {
+        const tagList = document.getElementById("tagList");
+        const counts = {};
+
+        posts.forEach((p) => {
+          (p.tags || []).forEach((t) => {
+            counts[t] = (counts[t] || 0) + 1;
+          });
+        });
+
+        const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+        tagList.innerHTML = entries
+          .map(
+            ([tag, count]) => `
+              <div class="tag-item" data-tag-name="${escapeHtml(tag)}" onclick="onTagClicked('${escapeHtml(
+              tag
+            )}')">
+                <div>#${escapeHtml(tag)}</div>
+                <div>(${count})</div>
+              </div>
+            `
+          )
+          .join("");
+
+        filterTagList(); // 검색어 적용
+      }
+
+      function filterTagList() {
+        const q = document.getElementById("tagSearch").value.toLowerCase();
+        document.querySelectorAll("#tagList .tag-item").forEach((item) => {
+          const name = (item.getAttribute("data-tag-name") || "").toLowerCase();
+          item.style.display = name.includes(q) ? "flex" : "none";
+        });
+      }
+
+      /****************************************************
+       * 언어 UI 토글 (헤더/버튼/번역 버튼)
+       ****************************************************/
+      const I18N_UI = {
+        KR: {
+          pageTitle: "장소 공유",
+          search: "장소/게시글 검색",
+          create: "게시글 작성",
+          menu_main: "메인",
+          menu_vocab: "단어장",
+          menu_share: "장소 공유",
+          translate_btn: "번역",
+          translate_back: "원문 보기",
+        },
+        JP: {
+          pageTitle: "場所シェア",
+          search: "場所/投稿検索",
+          create: "投稿作成",
+          menu_main: "メイン",
+          menu_vocab: "単語帳",
+          menu_share: "場所共有",
+          translate_btn: "翻訳",
+          translate_back: "原文表示",
+        },
+      };
+
+      function applyLanguageUI() {
+        const lang = localStorage.getItem(SHARE_LANG_KEY) || "KR";
+        const T = I18N_UI[lang];
+
+        document.getElementById("pageTitle").textContent = T.pageTitle;
+        document.getElementById("searchInput").placeholder = T.search;
+        document.getElementById("createPostBtn").textContent = T.create;
+        document.getElementById("menuMain").textContent = T.menu_main;
+        document.getElementById("menuVocab").textContent = T.menu_vocab;
+        document.getElementById("menuShare").textContent = T.menu_share;
+
+        // 번역 버튼 텍스트 (번역 안 된 상태 기준으로)
+        document.querySelectorAll(".post-translate-btn").forEach((btn) => {
+          const card = btn.closest(".post-card");
+          const id = Number(card.dataset.id);
+          const info = postStore[id];
+          if (info && info.isTranslated) {
+            btn.textContent = T.translate_back;
+          } else {
+            btn.textContent = T.translate_btn;
+          }
+        });
+
+        // 오른쪽 상단 토글 버튼에는 "바뀔 언어" 표시
+        document.getElementById("langToggle").textContent =
+          lang === "KR" ? "JP" : "KR";
+      }
+
+      /****************************************************
+       * INIT
+       ****************************************************/
+      document.addEventListener("DOMContentLoaded", () => {
+        // 언어 초기값
+        if (!localStorage.getItem(SHARE_LANG_KEY)) {
+          localStorage.setItem(SHARE_LANG_KEY, "KR");
+        }
+        applyLanguageUI();
+
+        // 언어 토글 버튼
+        document.getElementById("langToggle").addEventListener("click", () => {
+          const cur = localStorage.getItem(SHARE_LANG_KEY) || "KR";
+          localStorage.setItem(SHARE_LANG_KEY, cur === "KR" ? "JP" : "KR");
+          applyLanguageUI();
+        });
+
+        // 게시글 작성 버튼
+        document
+          .getElementById("createPostBtn")
+          .addEventListener("click", () => {
+            location.href = "create_post.html";
+          });
+
+        // 검색
+        document
+          .getElementById("searchInput")
+          .addEventListener("input", (e) => {
+            searchKeyword = e.target.value;
+            renderFeed();
+          });
+
+        // DB에서 데이터 불러오기
+        loadPlacesFromDB();
+      });
+    </script>
+  </body>
+</html>

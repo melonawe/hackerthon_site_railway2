@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>질문 등록</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      /* --- 메뉴바 pill 스타일 --- */
+      .menu-bar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .menu-item {
+        padding: 6px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+        font-weight: 600;
+        user-select: none;
+        background: #f1f5ff;
+        color: #2d6cdf;
+        border: 1px solid #2d6cdf;
+        transition: all 0.2s;
+      }
+      .menu-item.active {
+        background: #2d6cdf;
+        color: #fff;
+      }
+      .menu-item:hover {
+        background: #3b7fe0;
+        color: #fff;
+      }
+
+      /* --- 언어 변경 버튼 --- */
+      .lang-toggle {
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid #2d6cdf;
+        background: #f1f5ff;
+        color: #2d6cdf;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.16s;
+      }
+      .lang-toggle:hover {
+        background: #3b7fe0;
+        color: #fff;
+      }
+      .lang-toggle:active {
+        transform: scale(0.97);
+      }
+
+      /* --- 폼 스타일 (반응형 + resize 불가) --- */
+      .question-form {
+        max-width: 900px;
+        margin: 24px auto;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .question-form input,
+      .question-form textarea {
+        width: 100%;
+        padding: 8px;
+        font-size: 1em;
+        box-sizing: border-box;
+      }
+      .question-form textarea {
+        min-height: 120px;
+        max-height: 120px;
+        resize: none;
+      }
+      .question-form .button-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .question-form button {
+        padding: 6px 14px;
+        font-weight: 600;
+        cursor: pointer;
+        flex: 1 1 auto;
+        min-width: 100px;
+      }
+
+      @media (max-width: 480px) {
+        .question-form button {
+          flex: 1 1 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <!-- ● 클릭 막기 위해 pointer-events 제거 -->
+      <div class="title" id="siteTitle" style="pointer-events: none;">질문 등록</div>
+
+      <div class="header-right" style="margin-left: auto; display: flex; gap: 12px; align-items: center">
+        <nav class="menu-bar" id="menuBar">
+          <div class="menu-item" id="menuMain">메인</div>
+          <div class="menu-item" id="menuVocab">단어장</div>
+          <div class="menu-item" id="menuShare">장소 공유</div>
+        </nav>
+        <button id="langToggle" class="lang-toggle">JP</button>
+      </div>
+    </header>
+
+    <form id="questionForm" class="question-form">
+      <input id="title" type="text" placeholder="질문 제목 (필수)" required />
+      <textarea id="body" rows="6" placeholder="질문 내용 (선택)"></textarea>
+      <input id="tags" type="text" placeholder="태그 (콤마로 구분, 예: html,css)" />
+      <div class="button-group">
+        <button type="submit">등록</button>
+        <button type="button" id="cancel">목록으로</button>
+      </div>
+    </form>
+
+    <script>
+      const I18N = {
+        KR: {
+          siteTitle: '질문 등록',
+          mainTitle: '메인',
+          vocab: '단어장',
+          share: '장소 공유',
+          submit: '등록',
+          cancel: '목록으로',
+          placeholderTitle: '질문 제목 (필수)',
+          placeholderBody: '질문 내용 (선택)',
+          placeholderTags: '태그 (콤마로 구분)',
+          msgInputTitle: '제목을 입력하세요.',
+          msgDone: '등록되었습니다. 목록으로 이동합니다.'
+        },
+        JP: {
+          siteTitle: '質問登録',
+          mainTitle: 'メイン',
+          vocab: '単語帳',
+          share: '場所共有',
+          submit: '登録',
+          cancel: '一覧へ',
+          placeholderTitle: '質問タイトル (必須)',
+          placeholderBody: '質問内容 (任意)',
+          placeholderTags: 'タグ (カンマ区切り)',
+          msgInputTitle: 'タイトルを入力してください。',
+          msgDone: '登録しました。リストに戻ります。'
+        }
+      };
+
+      const LANG_KEY = 'simple_qa_lang';
+      function getLang() {
+        return localStorage.getItem(LANG_KEY) || 'KR';
+      }
+      function setLang(l) {
+        localStorage.setItem(LANG_KEY, l);
+      }
+
+      function applyI18n() {
+        const lang = getLang();
+        const T = I18N[lang];
+
+        document.getElementById('siteTitle').textContent = T.siteTitle;
+        document.getElementById('menuMain').textContent = T.mainTitle;
+        document.getElementById('menuVocab').textContent = T.vocab;
+        document.getElementById('menuShare').textContent = T.share;
+
+        // 버튼: 현재 언어가 아니라 다음 언어 표시
+        document.getElementById('langToggle').textContent = lang === 'KR' ? 'JP' : 'KR';
+
+        document.getElementById('title').placeholder = T.placeholderTitle;
+        document.getElementById('body').placeholder = T.placeholderBody;
+        document.getElementById('tags').placeholder = T.placeholderTags;
+
+        document.querySelector('button[type="submit"]').textContent = T.submit;
+        document.getElementById('cancel').textContent = T.cancel;
+      }
+
+      document.getElementById('langToggle').addEventListener('click', () => {
+        const next = getLang() === 'KR' ? 'JP' : 'KR';
+        setLang(next);
+        applyI18n();
+      });
+
+      document.getElementById('menuMain').addEventListener('click', () => (location.href = 'sample.html'));
+      document.getElementById('menuVocab').addEventListener('click', () => (location.href = 'vocab.html'));
+      document.getElementById('menuShare').addEventListener('click', () => (location.href = 'share.html'));
+
+      // ❌ 삭제됨: title 클릭 이벤트
+      // document.getElementById('siteTitle').addEventListener('click', ... );
+
+      const LS_KEY = 'simple_qa_questions_v1';
+      function loadQuestions() {
+        return JSON.parse(localStorage.getItem(LS_KEY) || '[]');
+      }
+      function saveQuestions(arr) {
+        localStorage.setItem(LS_KEY, JSON.stringify(arr));
+        localStorage.setItem('__last_update__', Date.now());
+      }
+
+      document.getElementById('questionForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const lang = getLang();
+        const T = I18N[lang];
+
+        const title = document.getElementById('title').value.trim();
+        const body = document.getElementById('body').value.trim();
+        const tagsRaw = document.getElementById('tags').value;
+        const tags = tagsRaw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+
+        if (!title) {
+          alert(T.msgInputTitle);
+          return;
+        }
+
+        const arr = loadQuestions();
+        const newQ = { id: Date.now(), title, body, tags, created: Date.now() };
+        arr.unshift(newQ);
+        saveQuestions(arr);
+
+        alert(T.msgDone);
+        location.href = 'sample.html';
+      });
+
+      document.getElementById('cancel').addEventListener('click', () => (location.href = 'sample.html'));
+
+      (function init() {
+        if (!localStorage.getItem(LANG_KEY)) setLang('KR');
+        applyI18n();
+      })();
+    </script>
+  </body>
+</html>

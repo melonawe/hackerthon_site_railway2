@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>게시글 작성</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <style>
+    .wrap {
+      display: flex;
+      justify-content: center;
+      padding-right: 0 !important;
+    }
+    .sidebar {
+      display: none !important;
+    }
+
+    .menu-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .menu-item {
+      padding: 6px 14px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 600;
+      user-select: none;
+      background: #f1f5ff;
+      color: #2d6cdf;
+      border: 1px solid #2d6cdf;
+      transition: all 0.2s;
+    }
+    .menu-item.active {
+      background: #2d6cdf;
+      color: #fff;
+    }
+    .menu-item:hover {
+      background: #3b7fe0;
+      color: #fff;
+    }
+
+    .lang-toggle {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid #2d6cdf;
+      background: #f1f5ff;
+      color: #2d6cdf;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.16s;
+    }
+    .lang-toggle:hover { background: #3b7fe0; color: #fff; }
+
+    .post-form-container {
+      width: 100%;
+      max-width: 800px;
+      margin: 40px auto;
+      background: #ffffff;
+      padding: 26px;
+      border-radius: 12px;
+      box-shadow: 0 6px 16px rgba(11,22,40,0.06);
+      border: 1px solid #dfe3eb;
+    }
+
+    .post-form-container h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.95rem;
+    }
+    .form-group textarea {
+      height: 150px;
+      resize: none;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: #2d6cdf;
+      color: #ffffff;
+      font-weight: 700;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .submit-btn:hover { background: #1f4fad; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="title" id="siteTitle">게시글 작성</div>
+
+    <div class="header-right" style="margin-left: auto; display: flex; gap: 12px; align-items: center">
+      <nav class="menu-bar" id="menuBar">
+        <div class="menu-item" id="menuMain" onclick="location.href='sample.html'">메인</div>
+        <div class="menu-item" id="menuVocab" onclick="location.href='vocab.html'">단어장</div>
+
+        <!-- 🔥 active 제거됨 -->
+        <div class="menu-item" id="menuShare" onclick="location.href='share.html'">장소 공유</div>
+      </nav>
+
+      <button id="langToggle" class="lang-toggle">JP</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <main class="main">
+
+      <div class="post-form-container">
+        <h2 id="formTitle">게시글 작성</h2>
+
+        <div class="form-group">
+          <label id="labelTitle">제목</label>
+          <input type="text" id="postTitle" placeholder="게시글 제목을 입력하세요" />
+        </div>
+
+        <div class="form-group">
+          <label id="labelContent">본문 내용</label>
+          <textarea id="postContent" placeholder="본문 내용을 입력하세요"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label id="labelTags">태그 (쉼표로 구분)</label>
+          <input type="text" id="postTags" placeholder="예: 산책, 라멘, 교류" />
+        </div>
+
+       <div class="form-group">
+  <label id="labelImage" for="postImage">이미지 (선택)</label>
+  <input
+    type="file"
+    id="postImage"
+    accept="image/*"
+  />
+</div>
+
+  <div class="form-group">
+    <label id="labelLocation">위치 URL (구글 지도) *</label>
+    <input type="text" id="postLocation" placeholder="https://maps.google.com/..." />
+  </div>
+
+  <!-- 버튼에 id 추가 (I18N에서 submit 텍스트 바꿀 때 필요) -->
+  <button type="button" id="submitBtn" onclick="submitPost()">작성 완료</button>
+
+    </div>
+  </main>
+  <aside class="sidebar"></aside>
+  </div>
+
+  <script>
+    const WRITE_LANG_KEY = "WRITE_PAGE_LANG";
+    const API_BASE = "http://localhost:3000";
+
+    const I18N = {
+      KR: {
+        formTitle: "게시글 작성",
+        title: "제목",
+        content: "본문 내용",
+        tags: "태그 (쉼표로 구분)",
+        image: "이미지 (선택)",
+        location: "위치 URL (구글 지도) *",
+        placeholderTitle: "게시글 제목을 입력하세요",
+        placeholderContent: "본문 내용을 입력하세요",
+        placeholderTags: "예: 산책, 라멘, 교류",
+        placeholderLocation: "https://maps.google.com/...",
+        submit: "작성 완료",
+
+        menuMain: "메인",
+        menuVocab: "단어장",
+        menuShare: "장소 공유",
+      },
+
+      JP: {
+        formTitle: "投稿作成",
+        title: "タイトル",
+        content: "本文",
+        tags: "タグ（カンマ区切り）",
+        image: "画像（任意）",
+        location: "場所URL（Googleマップ） *",
+        placeholderTitle: "投稿タイトルを入力してください",
+        placeholderContent: "本文を入力してください",
+        placeholderTags: "例：散歩, ラーメン, 交流",
+        placeholderLocation: "https://maps.google.com/...",
+        submit: "投稿完了",
+
+        menuMain: "メイン",
+        menuVocab: "単語帳",
+        menuShare: "場所共有",
+      }
+    };
+
+    function getLang() {
+      return localStorage.getItem(WRITE_LANG_KEY) || "KR";
+    }
+
+    function applyLangUI() {
+      const lang = getLang();
+      const T = I18N[lang];
+
+      document.getElementById("siteTitle").textContent = T.formTitle;
+      document.getElementById("formTitle").textContent = T.formTitle;
+
+      document.getElementById("labelTitle").textContent = T.title;
+      document.getElementById("labelContent").textContent = T.content;
+      document.getElementById("labelTags").textContent = T.tags;
+      document.getElementById("labelImage").textContent = T.image;
+      document.getElementById("labelLocation").textContent = T.location;
+
+      document.getElementById("postTitle").placeholder = T.placeholderTitle;
+      document.getElementById("postContent").placeholder = T.placeholderContent;
+      document.getElementById("postTags").placeholder = T.placeholderTags;
+      document.getElementById("postLocation").placeholder = T.placeholderLocation;
+
+      document.getElementById("submitBtn").textContent = T.submit;
+      document.getElementById("langToggle").textContent = lang === "KR" ? "JP" : "KR";
+
+      document.getElementById("menuMain").textContent = T.menuMain;
+      document.getElementById("menuVocab").textContent = T.menuVocab;
+      document.getElementById("menuShare").textContent = T.menuShare;
+    }
+
+    document.getElementById("langToggle").addEventListener("click", () => {
+      const cur = getLang();
+      localStorage.setItem(WRITE_LANG_KEY, cur === "KR" ? "JP" : "KR");
+      applyLangUI();
+    });
+
+    applyLangUI();
+
+async function submitPost() {
+  const title = document.getElementById("postTitle").value.trim();
+  const content = document.getElementById("postContent").value.trim();
+  const locationUrl = document.getElementById("postLocation").value.trim();
+
+  const tagInput = document.getElementById("postTags");
+  const tagsRaw = tagInput ? tagInput.value.trim() : "";
+
+  const imageInput = document.getElementById("postImage");
+  const imageFile = imageInput && imageInput.files ? imageInput.files[0] : null;
+
+  if (!title || !content || !locationUrl) {
+    alert("제목, 본문, 위치 URL은 반드시 입력해야 합니다.");
+    return;
+  }
+
+  const tags = tagsRaw
+    ? tagsRaw.split(",").map(t => t.trim()).filter(Boolean)
+    : [];
+
+  const descriptionFull = content + "\n\n[위치]\n" + locationUrl;
+
+  let imageUrl = null;
+
+  try {
+    // 1) 이미지 파일이 있으면 먼저 업로드해서 URL 받기
+    if (imageFile) {
+      const formData = new FormData();
+      formData.append("image", imageFile);
+
+      const uploadRes = await fetch(API_BASE + "/api/upload-image", {
+        method: "POST",
+        body: formData
+      });
+
+      const uploadData = await uploadRes.json().catch(() => ({}));
+
+      if (!uploadRes.ok) {
+        alert(uploadData.error || "이미지 업로드 중 오류가 발생했습니다.");
+        return;
+      }
+
+      // 서버가 돌려준 /uploads/~~~ 경로
+      imageUrl = uploadData.image_url;
+    }
+
+    // 2) 장소 정보 + image_url을 DB에 저장
+    const res = await fetch(API_BASE + "/api/places", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        description: descriptionFull,
+        tags,
+        lat: null,
+        lng: null,
+        image_url: imageUrl
+      })
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      alert(data.error || "장소 저장 중 오류가 발생했습니다.");
+      return;
+    }
+
+    alert("장소가 성공적으로 공유되었습니다!");
+    location.href = "share.html";
+  } catch (err) {
+    console.error(err);
+    alert("서버와 통신 중 오류가 발생했습니다.");
+  }
+}
+
+
+</script>
+
+</body>
+</html>

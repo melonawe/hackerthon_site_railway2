@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>한일 교류 질문 상자</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      /* 기존 CSS 그대로 유지 (디자인/레이아웃 변경 금지) */
+      .card {
+        border: 1px solid #ddd;
+        padding: 12px;
+        margin-bottom: 12px;
+        border-radius: 8px;
+        background: #fff;
+        position: relative;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+        transition: all 0.2s;
+      }
+      .card:hover {
+        border: 2px solid #2d6cdf;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+        transform: translateY(-2px);
+      }
+      .card-body {
+        margin: 8px 0;
+      }
+      .taglist {
+        margin-top: 8px;
+      }
+      .tag {
+        cursor: pointer;
+        color: #2d6cdf;
+        margin-right: 4px;
+        display: inline-block;
+      }
+      .meta {
+        font-size: 0.8em;
+        color: #666;
+        margin-top: 6px;
+      }
+      .card-actions {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        display: flex;
+        gap: 8px;
+      }
+      .card-actions button {
+        padding: 4px 8px;
+        font-size: 0.85em;
+        cursor: pointer;
+        border-radius: 999px;
+        border: 1px solid #2d6cdf;
+        background: #f1f5ff;
+        color: #2d6cdf;
+        font-weight: 600;
+        transition: all 0.16s;
+      }
+      .card-actions button:hover {
+        background: #3b7fe0;
+        color: #fff;
+      }
+      .comment-section {
+        margin-top: 8px;
+        padding-top: 6px;
+        border-top: 1px solid #eee;
+      }
+      .comment-list {
+        margin: 4px 0;
+      }
+      .comment-item {
+        font-size: 0.85em;
+        margin-bottom: 2px;
+        padding: 2px 4px;
+        background: #f5f5f5;
+        border-radius: 4px;
+      }
+      .comment-input {
+        display: flex;
+        gap: 4px;
+        margin-top: 4px;
+      }
+      .comment-input input {
+        flex: 1;
+        padding: 4px 6px;
+        font-size: 0.85em;
+      }
+      .comment-input button {
+        padding: 4px 8px;
+        font-size: 0.85em;
+        cursor: pointer;
+      }
+      .menu-bar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .menu-item {
+        padding: 6px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+        font-weight: 600;
+        user-select: none;
+        background: #f1f5ff;
+        color: #2d6cdf;
+        border: 1px solid #2d6cdf;
+        transition: all 0.2s;
+      }
+      .menu-item.active {
+        background: #2d6cdf;
+        color: #fff;
+      }
+      .menu-item:hover {
+        background: #3b7fe0;
+        color: #fff;
+      }
+      .lang-toggle {
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid #2d6cdf;
+        background: #f1f5ff;
+        color: #2d6cdf;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.16s;
+      }
+      .lang-toggle:hover {
+        background: #3b7fe0;
+        color: #fff;
+      }
+      .lang-toggle:active {
+        transform: scale(0.97);
+      }
+      .feed-header {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .feed-header-top {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      #searchInput {
+        flex: 1;
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 0.95em;
+        margin-right: 8px;
+      }
+      .add-question-btn {
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid #2d6cdf;
+        background: #2d6cdf;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .add-question-btn:hover {
+        background: #3b7fe0;
+      }
+      #activeFilter {
+        margin-top: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .active-tag-pill {
+        display: inline-block;
+        padding: 4px 10px;
+        background: #2d6cdf;
+        color: #fff;
+        border-radius: 999px;
+        font-size: 0.85em;
+        cursor: pointer;
+        user-select: none;
+      }
+      .clear-filter-btn {
+        margin-left: 4px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        border: none;
+        background: #f1f5ff;
+        color: #2d6cdf;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.8em;
+      }
+      .clear-filter-btn:hover {
+        background: #3b7fe0;
+        color: #fff;
+      }
+      .wrap {
+        display: flex;
+        gap: 16px;
+        padding: 16px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+      .main {
+        flex: 1;
+      }
+      .sidebar {
+        width: 260px;
+      }
+      .tag-box {
+        background: #fff;
+        padding: 12px;
+        border-radius: 8px;
+        border: 1px solid #eee;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+      }
+      .tag-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px;
+        margin: 6px 0;
+        border-radius: 6px;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all 0.12s;
+      }
+      .tag-item:hover {
+        background: #f7fbff;
+        border-color: #e6f0ff;
+      }
+      .tag-item.active-tag {
+        background: #eaf3ff;
+        border-color: #d7eaff;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="title" id="siteTitle" style="pointer-events: none;">한일 교류 질문 상자</div>
+      <div class="header-right" style="margin-left: auto; display: flex; gap: 12px; align-items: center">
+        <nav class="menu-bar" id="menuBar">
+          <div class="menu-item active" id="menuMain">메인</div>
+          <div class="menu-item" id="menuVocab">단어장</div>
+          <div class="menu-item" id="menuShare">장소 공유</div>
+        </nav>
+        <!-- langToggle shows the other language to switch to (KR shows JP, JP shows KR) -->
+        <button id="langToggle" class="lang-toggle">JP</button>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <main class="main">
+        <div class="feed-header">
+          <div class="feed-header-top">
+            <input id="searchInput" placeholder="전체 검색" />
+            <button class="add-question-btn" id="goNew">질문 등록</button>
+          </div>
+          <div id="activeFilter"></div>
+        </div>
+
+        <div class="feed" id="feed"></div>
+      </main>
+
+      <aside class="sidebar">
+        <div class="tag-box">
+          <input type="text" id="tagSearch" class="tag-search" placeholder="태그 검색" oninput="filterTagList()" />
+          <div id="tagList"></div>
+        </div>
+      </aside>
+    </div>
+
+    <script>
+      const API_BASE = 'http://localhost:3000';
+
+      async function syncQuestionsFromServer() {
+        try {
+          const res = await fetch(API_BASE + '/api/questions');
+          if (!res.ok) return;
+          const data = await res.json();
+          localStorage.setItem(LS_KEY, JSON.stringify(data));
+          localStorage.setItem('__last_update__', Date.now());
+        } catch (e) {
+          console.error('질문 동기화 실패:', e);
+        }
+      }
+
+      /* I18N: siteTitle changed per request */
+      const I18N = {
+        KR: {
+          siteTitle: '한일 교류 질문 상자',
+          addQuestion: '질문 등록',
+          searchPlaceholder: '전체 검색',
+          tagSearchPlaceholder: '태그 검색',
+          noQuestions: '질문이 없습니다.',
+          createdAt: '등록일',
+          menu_main: '메인',
+          menu_vocab: '단어장',
+          menu_share: '장소 공유',
+          clearFilter: '×',
+          comment: '코멘트',
+          translate: '번역',
+          noTag: '태그 없음',
+          commentBtn: '등록'
+        },
+        JP: {
+          siteTitle: '日韓交流 質問ボックス',
+          addQuestion: '質問を登録',
+          searchPlaceholder: '全体検索',
+          tagSearchPlaceholder: 'タグ検索',
+          noQuestions: '質問がありません。',
+          createdAt: '登録日',
+          menu_main: 'メイン',
+          menu_vocab: '単語帳',
+          menu_share: '場所共有',
+          clearFilter: '×',
+          comment: 'コメント',
+          translate: '翻訳',
+          noTag: 'タグなし',
+          commentBtn: '登録'
+        }
+      };
+
+      const LANG_KEY = 'simple_qa_lang';
+      const LS_KEY = 'simple_qa_questions_v1';
+      let activeTags = [];
+
+      function getLang() {
+        return localStorage.getItem(LANG_KEY) || 'KR';
+      }
+      function setLang(l) {
+        localStorage.setItem(LANG_KEY, l);
+      }
+
+      /* 샘플 데이터 (한일교류 관련) */
+      const SAMPLE = [
+        {
+          id: 1,
+          title: '일본어 교환 스터디',
+          body: '주 1~2회 일본어 회화/읽기 스터디원 모집',
+          tags: ['언어교류', '스터디', '일본어'],
+          comments: ['참여합니다!'],
+          created: new Date('2025-07-10T19:30:00').getTime()
+        },
+        {
+          id: 2,
+          title: '한일 문화교류 이벤트',
+          body: '전통요리, 영화감상 등 소규모 이벤트 아이디어 공유',
+          tags: ['이벤트', '문화교류'],
+          comments: ['김치전 vs 오코노미야키!'],
+          created: new Date('2025-08-02T14:10:00').getTime()
+        },
+        {
+          id: 3,
+          title: '일본 단기 여행 추천',
+          body: '도쿄/교토 현지 체험 추천 부탁',
+          tags: ['여행', '체험', '일본'],
+          comments: ['교토 다도 체험 추천'],
+          created: new Date('2025-09-05T09:00:00').getTime()
+        }
+      ];
+
+      function loadQuestions() {
+        const raw = localStorage.getItem(LS_KEY);
+        if (!raw) {
+          localStorage.setItem(LS_KEY, JSON.stringify(SAMPLE));
+          return JSON.parse(JSON.stringify(SAMPLE));
+        }
+        try {
+          const data = JSON.parse(raw);
+          if (!data || data.length === 0) {
+            localStorage.setItem(LS_KEY, JSON.stringify(SAMPLE));
+            return JSON.parse(JSON.stringify(SAMPLE));
+          }
+          return data;
+        } catch (e) {
+          console.error(e);
+          return JSON.parse(JSON.stringify(SAMPLE));
+        }
+      }
+
+      function saveQuestions(arr) {
+        localStorage.setItem(LS_KEY, JSON.stringify(arr));
+        localStorage.setItem('__last_update__', Date.now());
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(
+          /[&<>"']/g,
+          (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+        );
+      }
+
+      function revertAllTranslations() {
+        const questions = loadQuestions();
+        let changed = false;
+        for (const q of questions) {
+          if (q && q._isTranslated) {
+            if (q._original) {
+              q.title = q._original.title;
+              q.body = q._original.body;
+              q.comments = q._original.comments || [];
+            }
+            if (q.tagsOriginal) q.tags = q.tagsOriginal;
+            delete q._original;
+            delete q.tagsOriginal;
+            q._isTranslated = false;
+            changed = true;
+          }
+        }
+        if (changed) saveQuestions(questions);
+      }
+
+      function detectLangByText(text) {
+        if (!text) return 'KR';
+        const hangul = (text.match(/[\uac00-\ud7af\u1100-\u11ff\u3130-\u318f]/g) || []).length;
+        const kana = (text.match(/[\u3040-\u30ff]/g) || []).length;
+        const kanji = (text.match(/[\u4e00-\u9fff]/g) || []).length;
+        const jap = kana + kanji;
+        if (hangul > jap) return 'KR';
+        if (jap > hangul) return 'JP';
+        return 'KR';
+      }
+
+      async function translateQuestion(qId) {
+        const questions = loadQuestions();
+        const q = questions.find((x) => x.id === qId);
+        if (!q) return;
+
+        if (q._isTranslated) {
+          if (q._original) {
+            q.title = q._original.title;
+            q.body = q._original.body;
+            q.comments = q._original.comments || [];
+          }
+          if (q.tagsOriginal) q.tags = q.tagsOriginal;
+          delete q._original;
+          delete q.tagsOriginal;
+          q._isTranslated = false;
+          saveQuestions(questions);
+          render(document.getElementById('searchInput').value);
+          return;
+        }
+
+        const origTitle = q.title || '';
+        const origBody = q.body || '';
+        const origComments = (q.comments || []).slice();
+        const origTags = (q.tags || []).slice();
+
+        const parts = [];
+        const counts = { title: 0, body: 0, comments: origComments.length, tags: origTags.length };
+        if (origTitle) {
+          parts.push(origTitle);
+          counts.title = 1;
+        }
+        if (origBody) {
+          parts.push(origBody);
+          counts.body = 1;
+        }
+        origComments.forEach((c) => parts.push(c));
+        origTags.forEach((t) => parts.push(t));
+
+        if (parts.length === 0) return;
+
+        const detected = detectLangByText(parts.join('\n'));
+        const targetLang = detected === 'KR' ? 'JA' : 'KO';
+
+        try {
+          const res = await fetch('http://localhost:3000/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: parts.join('\n'), target_lang: targetLang })
+          });
+          const data = await res.json();
+          if (!data || !data.translations || !data.translations[0] || typeof data.translations[0].text !== 'string') {
+            throw new Error('번역 결과가 없습니다.');
+          }
+
+          const translatedFull = data.translations[0].text;
+          const translatedParts = translatedFull.split('\n');
+
+          let idx = 0;
+          q._original = { title: origTitle, body: origBody, comments: origComments.slice() };
+          q.tagsOriginal = origTags.slice();
+
+          if (counts.title) q.title = translatedParts[idx++] || '';
+          if (counts.body) q.body = translatedParts[idx++] || '';
+
+          q.comments = [];
+          for (let i = 0; i < counts.comments; i++) {
+            q.comments.push(translatedParts[idx++] || '');
+          }
+
+          q.tags = [];
+          for (let i = 0; i < counts.tags; i++) {
+            q.tags.push(translatedParts[idx++] || '');
+          }
+
+          q._isTranslated = true;
+          saveQuestions(questions);
+          render(document.getElementById('searchInput').value);
+        } catch (err) {
+          console.error('translateQuestion error', err);
+          alert('번역 실패: ' + (err.message || err));
+        }
+      }
+
+      function render(filterText = '') {
+        const lang = getLang(),
+          T = I18N[lang];
+        const questions = loadQuestions()
+          .slice()
+          .sort((a, b) => b.created - a.created);
+        const feed = document.getElementById('feed');
+        feed.innerHTML = '';
+        const qLower = (filterText || '').toLowerCase();
+
+        const shown = questions.filter((q) => {
+          if (!q) return false;
+          if (activeTags.length > 0) return activeTags.every((tag) => (q.tags || []).includes(tag));
+          if (!qLower) return true;
+          return (q.title + ' ' + (q.body || '') + ' ' + (q.tags || []).join(' ')).toLowerCase().includes(qLower);
+        });
+
+        if (shown.length === 0) {
+          feed.innerHTML = `<div class="card no-questions">${T.noQuestions}</div>`;
+          renderTagList([]);
+          renderActiveFilter();
+          return;
+        }
+
+        shown.forEach((q) => {
+          const el = document.createElement('div');
+          el.className = 'card';
+          el.setAttribute('data-id', q.id);
+          el.dataset.isTranslated = q._isTranslated ? 'true' : 'false';
+
+          const commentsHtml = (q.comments || [])
+            .map((c) => `<div class="comment-item">${escapeHtml(c)}</div>`)
+            .join('');
+          const tagsHtml = (q.tags || [])
+            .map((t) => `<span class="tag" onclick="onTagClicked('${escapeHtml(t)}')">#${escapeHtml(t)}</span>`)
+            .join(' ');
+          el.innerHTML = ` 
+      <div class="card-actions">
+        <button onclick="translateQuestion(${q.id})">${T.translate}</button>
+      </div>
+      <h4>${escapeHtml(q.title)}</h4>
+      ${q.body ? `<p class="card-body">${escapeHtml(q.body)}</p>` : ''}
+      <div class="taglist">${tagsHtml}</div>
+      <div class="comment-section" id="comment-section-${q.id}">
+        <div class="comment-list">${commentsHtml}</div>
+        <div class="comment-input">
+          <input type="text" placeholder="${escapeHtml(I18N[getLang()].comment)}..." id="comment-input-${q.id}">
+          <button onclick="addComment(${q.id})">${escapeHtml(I18N[getLang()].commentBtn)}</button>
+        </div>
+      </div>
+      <div class="meta">${T.createdAt}: ${new Date(q.created).toLocaleString()}</div>
+    `;
+          feed.appendChild(el);
+        });
+
+        const counts = {};
+        questions.forEach((q) => (q.tags || []).forEach((t) => (counts[t] = (counts[t] || 0) + 1)));
+        const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        renderTagList(entries);
+        renderActiveFilter();
+      }
+
+      async function addComment(id) {
+        const input = document.getElementById(`comment-input-${id}`);
+        const val = input.value.trim();
+        if (!val) return;
+        const questions = loadQuestions();
+        const q = questions.find((x) => x.id === id);
+        if (!q.comments) q.comments = [];
+        q.comments.push(val);
+        saveQuestions(questions);
+        input.value = '';
+        render(document.getElementById('searchInput').value);
+        try {
+          await fetch(API_BASE + `/api/questions/${id}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ body: val })
+          });
+        } catch (e) {
+          console.error('댓글 저장 실패:', e);
+        }
+      }
+
+      function renderTagList(entries) {
+        const tagList = document.getElementById('tagList');
+        const lang = getLang();
+        const T = I18N[lang];
+        if (!entries || entries.length === 0) {
+          tagList.innerHTML = `<div class="tag-item">${T.noTag}</div>`;
+          return;
+        }
+        tagList.innerHTML = entries
+          .map((e) => {
+            const name = escapeHtml(e[0]);
+            const cls = activeTags.includes(e[0]) ? 'active-tag' : '';
+            return `<div class="tag-item ${cls}" data-tag-name="${name}" onclick="onTagClicked('${name}')"><div>#${name}</div><div>(${e[1]})</div></div>`;
+          })
+          .join('');
+      }
+
+      function onTagClicked(tag) {
+        const idx = activeTags.indexOf(tag);
+        if (idx > -1) {
+          activeTags.splice(idx, 1);
+        } else {
+          activeTags.push(tag);
+        }
+        render();
+      }
+
+      function renderActiveFilter() {
+        const box = document.getElementById('activeFilter');
+        const lang = getLang();
+        const T = I18N[lang];
+        box.innerHTML = '';
+        activeTags.forEach((tag) => {
+          const pill = document.createElement('div');
+          pill.className = 'active-tag-pill';
+          pill.textContent = `#${tag}`;
+          const btn = document.createElement('button');
+          btn.className = 'clear-filter-btn';
+          btn.textContent = T.clearFilter;
+          btn.onclick = () => {
+            activeTags = activeTags.filter((t) => t !== tag);
+            render(document.getElementById('searchInput').value);
+          };
+          box.appendChild(pill);
+          box.appendChild(btn);
+        });
+      }
+
+      function filterTagList() {
+        const q = document.getElementById('tagSearch').value.toLowerCase();
+        const items = document.querySelectorAll('#tagList .tag-item');
+        items.forEach((it) => {
+          const name = it.getAttribute('data-tag-name') || '';
+          it.style.display = name.toLowerCase().includes(q) ? 'flex' : 'none';
+        });
+      }
+
+      document.getElementById('goNew').addEventListener('click', () => (location.href = 'new page sample.html'));
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        render(e.target.value);
+      });
+
+      document.getElementById('menuMain').addEventListener('click', () => {
+        revertAllTranslations();
+        location.href = 'sample.html';
+      });
+      document.getElementById('menuVocab').addEventListener('click', () => (location.href = 'vocab.html'));
+      document.getElementById('menuShare').addEventListener('click', () => (location.href = 'share.html'));
+
+      function applyI18n() {
+        const lang = getLang();
+        const T = I18N[lang];
+        document.getElementById('siteTitle').textContent = T.siteTitle;
+        document.getElementById('goNew').textContent = T.addQuestion;
+        document.getElementById('searchInput').placeholder = T.searchPlaceholder;
+        const tagSearchEl = document.getElementById('tagSearch');
+        if (tagSearchEl) tagSearchEl.placeholder = T.tagSearchPlaceholder;
+        document.getElementById('langToggle').textContent = getLang() === 'KR' ? 'JP' : 'KR';
+        document.getElementById('menuMain').textContent = T.menu_main;
+        document.getElementById('menuVocab').textContent = T.menu_vocab;
+        document.getElementById('menuShare').textContent = T.menu_share;
+        render(document.getElementById('searchInput').value);
+      }
+
+      document.getElementById('langToggle').addEventListener('click', () => {
+        const current = getLang();
+        setLang(current === 'KR' ? 'JP' : 'KR');
+        applyI18n();
+      });
+
+      (async function init() {
+        if (!localStorage.getItem(LANG_KEY)) setLang('KR');
+        await syncQuestionsFromServer();
+
+        revertAllTranslations();
+
+        if (!localStorage.getItem(LANG_KEY)) setLang('KR');
+        applyI18n();
+        render();
+      })();
+    </script>
+  </body>
+</html>

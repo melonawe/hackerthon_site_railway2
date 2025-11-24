@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>단어장</title>
+    <link rel="stylesheet" href="style.css" />
+
+    <style>
+      /* --- 메뉴바 pill 스타일 --- */
+      .menu-bar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .menu-item {
+        padding: 6px 14px;
+        border-radius: 999px;
+        cursor: pointer;
+        font-weight: 600;
+        user-select: none;
+        background: #f1f5ff;
+        color: #2d6cdf;
+        border: 1px solid #2d6cdf;
+        transition: all 0.2s;
+      }
+      .menu-item.active {
+        background: #2d6cdf;
+        color: #fff;
+      }
+      .menu-item:hover {
+        background: #3b7fe0;
+        color: #fff;
+      }
+
+      /* --- 언어 변경 버튼 스타일 --- */
+      .lang-toggle {
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid #2d6cdf;
+        background: #f1f5ff;
+        color: #2d6cdf;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.16s;
+      }
+      .lang-toggle:hover {
+        background: #3b7fe0;
+        color: #fff;
+      }
+      .lang-toggle:active {
+        transform: scale(0.97);
+      }
+
+      /* --- 단어 카드 스타일 --- */
+      .word-line {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .field {
+        margin-top: 8px;
+        line-height: 1.6;
+      }
+      .word-example {
+        white-space: pre-line;
+        margin-top: 6px;
+      }
+      .card {
+        position: relative;
+        padding: 12px;
+        border: 1px solid #e6e6e6;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      }
+      .card:hover {
+        border: 2px solid #2d6cdf;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.18);
+        transform: translateY(-2px);
+      }
+
+      ruby {
+        ruby-position: over;
+      }
+      rt {
+        font-size: 0.78rem;
+        opacity: 0.75;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <div class="title" id="siteTitle" style="cursor: pointer">단어장</div>
+      <div class="header-right" style="margin-left: auto; display: flex; gap: 12px; align-items: center">
+        <nav class="menu-bar" id="menuBar">
+          <div class="menu-item" id="menuMain">메인</div>
+          <div class="menu-item active" id="menuVocab">단어장</div>
+          <div class="menu-item" id="menuShare">장소 공유</div>
+        </nav>
+        <button id="langToggle" class="lang-toggle">JP</button>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <main class="main">
+        <div class="feed-header" style="display: flex; gap: 8px; align-items: center">
+          <input
+            id="searchInput"
+            placeholder="단어 검색"
+            aria-label="단어 검색"
+            style="flex: 0.75; min-width: 150px; padding: 8px; border-radius: 6px; border: 1px solid #ddd"
+          />
+          <select
+            id="sortSelect"
+            aria-label="정렬 선택"
+            style="padding: 8px; border-radius: 6px; border: 1px solid #ddd"
+          >
+            <option value="kr">가나다순</option>
+            <option value="jp">あいうえお順</option>
+          </select>
+        </div>
+
+        <div class="feed" id="feed"></div>
+      </main>
+    </div>
+
+    <script>
+      const vocabList = [
+        {
+          word_kr: '사과',
+          word_jp: '林檎',
+          furi: 'りんご',
+          mean_kr: 'apple',
+          mean_jp: 'りんご',
+          ex_kr: '사과를 먹었습니다.',
+          ex_jp: 'りんごを食べました。'
+        },
+        {
+          word_kr: '책',
+          word_jp: '本',
+          furi: 'ほん',
+          mean_kr: 'book',
+          mean_jp: '本（ほん）',
+          ex_kr: '책을 읽습니다.',
+          ex_jp: '本を読みます。'
+        }
+      ];
+
+      const I18N = {
+        KR: {
+          searchPlaceholder: '단어 검색',
+          menu_main: '메인',
+          menu_vocab: '단어장',
+          menu_share: '장소 공유',
+          siteTitle: '단어장'
+        },
+        JP: {
+          searchPlaceholder: '単語検索',
+          menu_main: 'メイン',
+          menu_vocab: '単語帳',
+          menu_share: '場所共有',
+          siteTitle: '単語帳'
+        }
+      };
+
+      function renderFeed() {
+        const feed = document.getElementById('feed');
+        const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+        const sortMode = document.getElementById('sortSelect').value;
+
+        let list = vocabList.slice();
+
+        if (sortMode === 'kr') list.sort((a, b) => a.word_kr.localeCompare(b.word_kr));
+        else list.sort((a, b) => a.word_jp.localeCompare(b.word_jp, 'ja'));
+
+        if (keyword) {
+          list = list.filter((v) => Object.values(v).some((val) => val.toLowerCase().includes(keyword)));
+        }
+
+        feed.innerHTML = '';
+        if (list.length === 0) {
+          feed.innerHTML = '<div class="card">단어가 없습니다.</div>';
+          return;
+        }
+
+        list.forEach((v) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <div class="word-line">${v.word_kr} / <ruby>${v.word_jp}<rt>${v.furi}</rt></ruby></div>
+            <div class="field"><b>뜻:</b> ${v.mean_kr} / ${v.mean_jp}</div>
+            <div class="field">
+              <b>예제:</b>
+              <div class="word-example">${v.ex_kr}</div>
+              <div class="word-example">${v.ex_jp}</div>
+            </div>
+          `;
+          feed.appendChild(card);
+        });
+      }
+
+      document.getElementById('searchInput').addEventListener('input', renderFeed);
+      document.getElementById('sortSelect').addEventListener('change', renderFeed);
+
+      document.getElementById('menuMain').addEventListener('click', () => (location.href = 'sample.html'));
+      document.getElementById('menuVocab').addEventListener('click', () => (location.href = 'vocab.html'));
+      document.getElementById('menuShare').addEventListener('click', () => (location.href = 'share.html'));
+
+      document.getElementById('siteTitle').addEventListener('click', () => (location.href = 'sample.html'));
+
+      const LANG_KEY = 'simple_qa_lang';
+      function getLang() {
+        return localStorage.getItem(LANG_KEY) || 'KR';
+      }
+      function setLang(l) {
+        localStorage.setItem(LANG_KEY, l);
+      }
+
+      function applyLang() {
+        const lang = getLang();
+        const T = I18N[lang];
+        document.getElementById('searchInput').placeholder = T.searchPlaceholder;
+        document.getElementById('menuMain').textContent = T.menu_main;
+        document.getElementById('menuVocab').textContent = T.menu_vocab;
+        document.getElementById('menuShare').textContent = T.menu_share;
+        document.getElementById('siteTitle').textContent = T.siteTitle;
+        // 버튼에는 현재 언어가 아니라 "변경될 언어" 표시 (KR → JP, JP → KR)
+        document.getElementById('langToggle').textContent = lang === 'KR' ? 'JP' : 'KR';
+      }
+
+      document.getElementById('langToggle').addEventListener('click', () => {
+        const next = getLang() === 'KR' ? 'JP' : 'KR';
+        setLang(next);
+        applyLang();
+      });
+
+      if (!localStorage.getItem(LANG_KEY)) setLang('KR');
+      applyLang();
+      renderFeed();
+    </script>
+  </body>
+</html>
